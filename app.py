@@ -9,9 +9,16 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
-import plotly.io as pio
+try:
+	import plotly.express as px
+	import plotly.graph_objects as go
+	import plotly.io as pio
+	_PLOTLY_IMPORT_ERROR = None
+except Exception as exc:
+	px = None
+	go = None
+	pio = None
+	_PLOTLY_IMPORT_ERROR = exc
 import requests
 import streamlit as st
 import yfinance as yf
@@ -27,8 +34,6 @@ from modules.portofolio_viz import render_portfolio_visualization_tab, _load_sav
 # load dict variable
 from modules.presets import get_watchlist_preset 
 
-WATCHLIST_PRESETS = get_watchlist_preset()
-
 try:
 	from yfinance.exceptions import YFRateLimitError
 except Exception:
@@ -36,6 +41,22 @@ except Exception:
 
 
 st.set_page_config(page_title="Simple Invest", layout="wide")
+
+if _PLOTLY_IMPORT_ERROR is not None:
+	st.error(
+		"Plotly failed to import. Ensure `plotly` is listed in requirements.txt "
+		"and redeploy. Error: "
+		+ str(_PLOTLY_IMPORT_ERROR)
+	)
+	st.stop()
+
+
+@st.cache_data(show_spinner=False, ttl=21600)
+def _get_watchlist_presets() -> dict[str, list[str]]:
+	try:
+		return get_watchlist_preset()
+	except Exception:
+		return {}
 
 ANALYSES_DIR = Path("analyses")
 
@@ -765,7 +786,7 @@ def _compute_price_vs_sma(tickers: tuple[str, ...], sma_period: int) -> pd.DataF
 def render_watchlist_tab() -> None:
 	st.subheader("Watchlist")
 
-	all_sources = {**WATCHLIST_PRESETS, **_load_saved_portfolio_sources()}
+	all_sources = {**_get_watchlist_presets(), **_load_saved_portfolio_sources()}
 	source_options = list(all_sources.keys())
 	default_source = source_options[0] if source_options else "S&P 500"
 
@@ -3714,7 +3735,7 @@ def main():
 		return
 
 	if selected_view == "Insider Buying Tracker":
-		all_sources = {**WATCHLIST_PRESETS, **_load_saved_portfolio_sources()}
+		all_sources = {**_get_watchlist_presets(), **_load_saved_portfolio_sources()}
 		render_insider_buying_tracker_tab(watchlist_sources=all_sources)
 		return
 
