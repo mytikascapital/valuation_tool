@@ -2891,12 +2891,17 @@ def _build_valuation_pdf(
 
 def render_colored_value_metric(label: str, value_text: str, color: str, subtitle: str | None = None) -> None:
 	label_color = "#0f172a" if st.session_state.get("ui_light_mode") else "#ffffff"
+	subtitle_html = (
+		f'<div style="font-size: var(--font-size-sm, 0.875rem); color: {label_color};">{subtitle}</div>'
+		if subtitle
+		else ""
+	)
 	st.markdown(
 		f"""
 		<div style=\"padding: 0.1rem 0.2rem;\">
 			<div style=\"font-size: var(--font-size-sm, 0.875rem); color: {label_color};\">{label}</div>
 			<div style=\"font-size: var(--font-size-2xl, 1.5rem); font-weight: 600; color: {color}; line-height: 1.2;\">{value_text}</div>
-			{f'<div style=\"font-size: var(--font-size-sm, 0.875rem); color: {label_color};\">{subtitle}</div>' if subtitle else ''}
+			{subtitle_html}
 		</div>
 		""",
 		unsafe_allow_html=True,
